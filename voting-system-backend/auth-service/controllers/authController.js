@@ -45,7 +45,6 @@ async function registerUser(req, res) {
 }
 
 // Login an existing user
-// Login an existing user
 async function loginUser(req, res) {
     console.log("loginUser called");
     try {
@@ -63,7 +62,7 @@ async function loginUser(req, res) {
     }
 }
 
-// Verify 2FA token
+// Verify 2FA token and issue a new token
 async function verify2FA(req, res) {
     console.log("verify2FA called with:", req.body);
     try {
@@ -81,7 +80,9 @@ async function verify2FA(req, res) {
         });
 
         if (verified) {
-            res.status(200).send('2FA verification successful');
+            // Issue a new token upon successful 2FA verification
+            const newToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+            res.status(200).send({ token: newToken, user: { _id: user._id, username: user.username, role: user.role } });
         } else {
             res.status(400).send('Invalid 2FA token');
         }
@@ -96,7 +97,6 @@ async function logoutUser(req, res) {
     console.log("logoutUser called");
     res.status(200).send('User logged out');
 }
-
 
 module.exports = {
     registerUser,

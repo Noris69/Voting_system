@@ -57,6 +57,7 @@ async function deleteElection(req, res) {
         res.status(500).send(err.message);
     }
 }
+
 async function getAllElections(req, res) {
     try {
         const elections = await Election.find();

@@ -1,7 +1,7 @@
 const express = require('express');
 const { createElection, updateElection, deleteElection, importElections, getAllElections } = require('../controllers/electionController');
-const router = express.Router();
 const { authMiddleware, adminMiddleware } = require('../middlewares/authMiddleware');
+const router = express.Router();
 
 /**
  * @swagger

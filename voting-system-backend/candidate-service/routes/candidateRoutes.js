@@ -1,7 +1,8 @@
 const express = require('express');
-const { addCandidate, removeCandidate, updateCandidate } = require('../controllers/candidateController');
+const { addCandidate, removeCandidate, updateCandidate , getTotalCandidatesByElection } = require('../controllers/candidateController');
 const router = express.Router();
-const Candidate = require('../models/Candidate'); // Ensure this line is included
+const { authMiddleware, adminMiddleware } = require('../middlewares/authMiddleware');
+const Candidate = require('../models/Candidate');
 
 /**
  * @swagger
@@ -23,9 +24,11 @@ const Candidate = require('../models/Candidate'); // Ensure this line is include
  *           schema:
  *             type: object
  *             properties:
- *               name:
+ *               candidate_name:
  *                 type: string
  *               party:
+ *                 type: string
+ *               image_url:
  *                 type: string
  *     responses:
  *       200:
@@ -84,9 +87,11 @@ router.delete('/:electionId/:candidateId', removeCandidate);
  *           schema:
  *             type: object
  *             properties:
- *               name:
+ *               candidate_name:
  *                 type: string
  *               party:
+ *                 type: string
+ *               image_url:
  *                 type: string
  *     responses:
  *       200:
@@ -117,7 +122,7 @@ router.put('/:electionId/:candidateId', updateCandidate);
  *               items:
  *                 type: object
  *                 properties:
- *                   name:
+ *                   candidate_name:
  *                     type: string
  *                   party:
  *                     type: string
@@ -131,5 +136,49 @@ router.get('/:electionId', async (req, res) => {
         res.status(500).send(err.message);
     }
 });
+
+
+
+router.get('/stats/total-by-party/:electionId', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const electionId = req.params.electionId;
+        const data = await Candidate.aggregate([
+            { $match: { election_id: electionId } },
+            {
+                $group: {
+                    _id: "$party",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+        res.json(data);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+router.get('/stats/evolution', authMiddleware, adminMiddleware, async (req, res) => {
+    try {
+        const data = await Candidate.aggregate([
+            {
+                $group: {
+                    _id: {
+                        year: { $year: "$createdAt" },
+                        month: { $month: "$createdAt" },
+                        day: { $dayOfMonth: "$createdAt" }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
+        ]);
+        res.json(data);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+router.get('/stats/total-by-election', authMiddleware, adminMiddleware, getTotalCandidatesByElection);
+
+
 
 module.exports = router;

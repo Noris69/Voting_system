@@ -23,6 +23,7 @@ const Login = () => {
         const { user, token } = response.data;
         setUserId(user._id);
         setJwtToken(token);
+        console.log('Login successful, JWT token:', token);
         toast.success('Login successful! Please enter your 2FA token.');
       } catch (error) {
         if (error.response && error.response.status === 401) {
@@ -34,9 +35,14 @@ const Login = () => {
     } else {
       // Second step: Verify 2FA token
       try {
-        const tokenResponse = await api.post('/auth/verify-2fa', { userId, token });
+        console.log('Verifying 2FA with token:', jwtToken);
+        const tokenResponse = await api.post('/auth/verify-2fa', { userId, token }, {
+          headers: { 'x-auth-token': jwtToken }
+        });
         if (tokenResponse.status === 200) {
-          setAuthData({ token: jwtToken, user: { _id: userId, username } });
+          const { token: newToken, user } = tokenResponse.data;
+          setAuthData({ token: newToken, user });
+          console.log('2FA verification successful, new JWT token:', newToken);
           toast.success('2FA verification successful!');
           navigate('/elections');
         } else {

@@ -1,4 +1,6 @@
 const Candidate = require('../models/Candidate');
+const Election = require('../models/Election');
+
 
 // Add a candidate to an election
 async function addCandidate(req, res) {
@@ -42,9 +44,45 @@ async function updateCandidate(req, res) {
         res.status(500).send(err.message);
     }
 }
-
+// Get total candidates by election
+const getTotalCandidatesByElection = async (req, res) => {
+    try {
+      const results = await Candidate.aggregate([
+        {
+          $group: {
+            _id: "$election_id",
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $lookup: {
+            from: "elections",
+            localField: "_id",
+            foreignField: "_id",
+            as: "election"
+          }
+        },
+        {
+          $unwind: "$election"
+        },
+        {
+          $project: {
+            _id: 0,
+            election_name: "$election.election_name",
+            count: 1
+          }
+        }
+      ]);
+  
+      res.status(200).json(results);
+    } catch (err) {
+      res.status(500).send(err.message);
+    }
+  };
+  
 module.exports = {
     addCandidate,
     removeCandidate,
-    updateCandidate
+    updateCandidate,
+    getTotalCandidatesByElection
 };

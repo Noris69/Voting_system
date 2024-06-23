@@ -189,9 +189,23 @@ async function updateUserRole(req, res) {
     }
 }
 
+const deleteUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const user = await User.findByIdAndDelete(userId);
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+        res.status(200).send('User deleted successfully');
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
     updateUserRole,
+    deleteUser,
     importUsers
 };

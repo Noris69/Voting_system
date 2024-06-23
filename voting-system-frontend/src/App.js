@@ -4,6 +4,8 @@ import Navbar from './components/Navbar';
 import Home from './components/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
+import CandidateManagement from './components/CandidateManagement'; // Import Candidate Management component
+
 import ElectionList from './components/Election/ElectionList';
 import ElectionDetail from './components/Election/ElectionDetail';
 import AdminPanel from './components/AdminPanel';
@@ -25,7 +27,7 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/elections" element={<ElectionList />} />
-          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/admin/*" element={<AdminPanel />} />
           <Route path="/elections/:electionId" element={<CandidateList />} />
 
 

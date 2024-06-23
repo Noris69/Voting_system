@@ -1,5 +1,5 @@
 const express = require('express');
-const { getAllUsers, getUserById, updateUserRole, importUsers } = require('../controllers/userController');
+const { getAllUsers, getUserById, updateUserRole, deleteUser, importUsers } = require('../controllers/userController');
 const { authMiddleware, adminMiddleware } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
@@ -89,6 +89,25 @@ router.get('/:userId', authMiddleware, getUserById);
  *         description: User role updated successfully
  */
 router.put('/:userId/role', authMiddleware, adminMiddleware, updateUserRole);
+
+/**
+ * @swagger
+ * /api/users/{userId}:
+ *   delete:
+ *     summary: Delete user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ */
+router.delete('/:userId', authMiddleware, adminMiddleware, deleteUser);
 
 /**
  * @swagger
