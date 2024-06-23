@@ -4,7 +4,7 @@ import Navbar from './components/Navbar';
 import Home from './components/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
-import CandidateManagement from './components/CandidateManagement'; // Import Candidate Management component
+import CandidateManagement from './components/CandidateManagement';
 
 import ElectionList from './components/Election/ElectionList';
 import ElectionDetail from './components/Election/ElectionDetail';
@@ -12,10 +12,10 @@ import AdminPanel from './components/AdminPanel';
 import AuthProvider from './contexts/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import CandidateList from './components/CandidateList/CandidateList';
+import VotePage from './components/Election/VotePage'; // Import the voting page
 
 import 'react-toastify/dist/ReactToastify.css';
 import './styles/main.css';
-
 
 const App = () => {
   return (
@@ -27,10 +27,9 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/elections" element={<ElectionList />} />
+          <Route path="/vote/:electionId" element={<VotePage />} /> {/* Add this line */}
           <Route path="/admin/*" element={<AdminPanel />} />
           <Route path="/elections/:electionId" element={<CandidateList />} />
-
-
         </Routes>
         <ToastContainer />
       </Router>

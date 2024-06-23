@@ -66,11 +66,39 @@ async function getAllElections(req, res) {
         res.status(500).send(err.message);
     }
 }
+// Get current elections
+const getCurrentElections = async (req, res) => {
+    try {
+      const today = new Date();
+      const elections = await Election.find({
+        start_date: { $lte: today },
+        end_date: { $gte: today }
+      });
+      res.status(200).json(elections);
+    } catch (err) {
+      res.status(500).send(err.message);
+    }
+  };
+  // Get election by ID
+const getElectionById = async (req, res) => {
+    try {
+      const election = await Election.findById(req.params.electionId);
+      if (!election) {
+        return res.status(404).send('Election not found');
+      }
+      res.status(200).json(election);
+    } catch (err) {
+      res.status(500).send(err.message);
+    }
+  };
 
 module.exports = {
     createElection,
     updateElection,
     deleteElection,
     importElections,
-    getAllElections 
+    getAllElections,
+    getCurrentElections,
+    getElectionById
+ 
 };

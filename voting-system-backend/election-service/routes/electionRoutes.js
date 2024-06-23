@@ -1,5 +1,5 @@
 const express = require('express');
-const { createElection, updateElection, deleteElection, importElections, getAllElections } = require('../controllers/electionController');
+const { createElection, updateElection, deleteElection, importElections, getAllElections, getCurrentElections, getElectionById  } = require('../controllers/electionController');
 const { authMiddleware, adminMiddleware } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
@@ -126,5 +126,17 @@ router.post('/import', authMiddleware, adminMiddleware, importElections);
  *                     format: date
  */
 router.get('/all', getAllElections);
+router.get('/current', authMiddleware, getCurrentElections);
+router.get('/:electionId', authMiddleware, getElectionById); // Nouvelle route pour obtenir une élection par ID
+// Get election by ID
+router.get('/:id', async (req, res) => {
+    try {
+        const election = await Election.findById(req.params.id);
+        if (!election) return res.status(404).json({ message: 'Election not found' });
+        res.json(election);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
 
 module.exports = router;

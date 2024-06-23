@@ -17,7 +17,12 @@ const ElectionList = () => {
                 });
                 const votesResponse = await axios.get(`http://localhost:5006/api/votes/user/${authData.user._id}`);
                 const votedElections = votesResponse.data.map(vote => vote.election_id._id);
-                const filteredElections = electionResponse.data.filter(election => !votedElections.includes(election._id));
+                const currentDate = new Date();
+                const filteredElections = electionResponse.data.filter(election => 
+                    !votedElections.includes(election._id) &&
+                    new Date(election.start_date) <= currentDate &&
+                    new Date(election.end_date) >= currentDate
+                );
                 setElections(filteredElections);
             } catch (error) {
                 toast.error('Failed to fetch elections');
@@ -37,7 +42,7 @@ const ElectionList = () => {
                         <div className="text-center py-4">No elections found</div>
                     ) : (
                         elections.map(election => (
-                            <Link to={`/elections/${election._id}`} key={election._id} className="max-w-sm bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 flex-shrink-0">
+                            <Link to={`/vote/${election._id}`} key={election._id} className="max-w-sm bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 flex-shrink-0">
                                 <div>
                                     {election.image_url && <img className="rounded-t-lg" src={election.image_url} alt={election.election_name} />}
                                     <div className="p-5">
