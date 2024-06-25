@@ -13,6 +13,7 @@ import AuthProvider from './contexts/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import CandidateList from './components/CandidateList/CandidateList';
 import VotePage from './components/Election/VotePage'; // Import the voting page
+import ElectionCalendar from './components/Election/ElectionCalendar';
 
 import 'react-toastify/dist/ReactToastify.css';
 import './styles/main.css';
@@ -29,7 +30,8 @@ const App = () => {
           <Route path="/elections" element={<ElectionList />} />
           <Route path="/vote/:electionId" element={<VotePage />} /> {/* Add this line */}
           <Route path="/admin/*" element={<AdminPanel />} />
-          <Route path="/elections/:electionId" element={<CandidateList />} />
+          <Route path="/elections/:electionId" element={<ElectionDetail />} />
+          <Route path="/elections/calendar" element={<ElectionCalendar />} />
         </Routes>
         <ToastContainer />
       </Router>

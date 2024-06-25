@@ -5,7 +5,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
 const ElectionDetail = () => {
-    const { id } = useParams();
+    const { electionId } = useParams();
     const { authData } = useContext(AuthContext);
     const [election, setElection] = useState(null);
     const [candidates, setCandidates] = useState([]);
@@ -13,7 +13,7 @@ const ElectionDetail = () => {
     useEffect(() => {
         const fetchElection = async () => {
             try {
-                const response = await axios.get(`http://localhost:5003/api/elections/${id}`, {
+                const response = await axios.get(`http://localhost:5003/api/elections/${electionId}`, {
                     headers: { 'x-auth-token': authData.token }
                 });
                 setElection(response.data);
@@ -25,7 +25,7 @@ const ElectionDetail = () => {
 
         const fetchCandidates = async () => {
             try {
-                const response = await axios.get(`http://localhost:5004/api/candidates/${id}`, {
+                const response = await axios.get(`http://localhost:5004/api/candidates/${electionId}`, {
                     headers: { 'x-auth-token': authData.token }
                 });
                 setCandidates(response.data);
@@ -37,7 +37,7 @@ const ElectionDetail = () => {
 
         fetchElection();
         fetchCandidates();
-    }, [id, authData]);
+    }, [electionId, authData]);
 
     if (!election) {
         return <div>Loading...</div>;

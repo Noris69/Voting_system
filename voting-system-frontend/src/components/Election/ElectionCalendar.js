@@ -4,13 +4,14 @@ import axios from 'axios';
 import { AuthContext } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import 'react-calendar/dist/Calendar.css';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './ElectionCalendar.css'; // Assurez-vous d'ajouter des styles personnalisés ici
 
 const ElectionCalendar = () => {
     const [elections, setElections] = useState([]);
     const { authData } = useContext(AuthContext);
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchElections = async () => {
@@ -35,7 +36,11 @@ const ElectionCalendar = () => {
                 const endDate = new Date(e.end_date);
                 return date >= startDate && date <= endDate;
             });
-            return election ? <Link to={`/elections/${election._id}`}><p className="text-xs">{election.election_name}</p></Link> : null;
+            return election ? (
+                <div onClick={() => navigate(`/elections/${election._id}`)} className="cursor-pointer">
+                    <p className="text-xs">{election.election_name}</p>
+                </div>
+            ) : null;
         }
     };
 
