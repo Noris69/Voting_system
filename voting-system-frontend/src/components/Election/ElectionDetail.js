@@ -13,7 +13,7 @@ const ElectionDetail = () => {
     useEffect(() => {
         const fetchElection = async () => {
             try {
-                const response = await axios.get(`http://localhost:5003/api/elections/${electionId}`, {
+                const response = await axios.get(`http://172.210.38.57:5003/api/elections/${electionId}`, {
                     headers: { 'x-auth-token': authData.token }
                 });
                 setElection(response.data);
@@ -25,7 +25,7 @@ const ElectionDetail = () => {
 
         const fetchCandidates = async () => {
             try {
-                const response = await axios.get(`http://localhost:5004/api/candidates/${electionId}`, {
+                const response = await axios.get(`http://172.210.38.57:5004/api/candidates/${electionId}`, {
                     headers: { 'x-auth-token': authData.token }
                 });
                 setCandidates(response.data);

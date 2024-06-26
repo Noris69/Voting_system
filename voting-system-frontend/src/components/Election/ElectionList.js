@@ -12,10 +12,10 @@ const ElectionList = () => {
     useEffect(() => {
         const fetchElections = async () => {
             try {
-                const electionResponse = await axios.get('http://localhost:5003/api/elections/all', {
+                const electionResponse = await axios.get('http://172.210.38.57:5003/api/elections/all', {
                     headers: { 'x-auth-token': authData.token }
                 });
-                const votesResponse = await axios.get(`http://localhost:5006/api/votes/user/${authData.user._id}`);
+                const votesResponse = await axios.get(`http://172.210.38.57:5006/api/votes/user/${authData.user._id}`);
                 const votedElections = votesResponse.data.map(vote => vote.election_id._id);
                 const currentDate = new Date();
                 const filteredElections = electionResponse.data.filter(election => 

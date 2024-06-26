@@ -20,7 +20,7 @@ const VotePage = () => {
   useEffect(() => {
     const fetchCandidates = async () => {
       try {
-        const response = await axios.get(`http://localhost:5004/api/candidates/${electionId}`, {
+        const response = await axios.get(`http://172.210.38.57:5004/api/candidates/${electionId}`, {
           headers: { 'x-auth-token': authData.token }
         });
         setCandidates(response.data);
@@ -44,7 +44,7 @@ const VotePage = () => {
   const handleVote = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`http://localhost:5006/api/votes/${electionId}`, {
+      await axios.post(`http://172.210.38.57:5006/api/votes/${electionId}`, {
         userId: authData.user._id,
         candidateId: selectedCandidate,
         password

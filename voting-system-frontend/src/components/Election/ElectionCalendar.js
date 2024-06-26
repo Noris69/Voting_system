@@ -16,7 +16,7 @@ const ElectionCalendar = () => {
     useEffect(() => {
         const fetchElections = async () => {
             try {
-                const response = await axios.get('http://localhost:5003/api/elections/all', {
+                const response = await axios.get('http://172.210.38.57:5003/api/elections/all', {
                     headers: { 'x-auth-token': authData.token }
                 });
                 setElections(response.data);

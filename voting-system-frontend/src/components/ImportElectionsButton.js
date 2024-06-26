@@ -26,7 +26,7 @@ const ImportElectionsButton = () => {
           return;
         }
 
-        const response = await axios.post('http://localhost:5003/api/admin/elections/import', elections, {
+        const response = await axios.post('http://172.210.38.57:5003/api/admin/elections/import', elections, {
           headers: {
             Authorization: `Bearer ${token}`
           }
