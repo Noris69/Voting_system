@@ -74,6 +74,11 @@ const UserManagement = () => {
           }
         });
         toast.success('Users imported successfully');
+        // Refresh user list after import
+        const response = await api.get('/users', {
+          headers: { 'x-auth-token': authData.token }
+        });
+        setUsers(response.data);
       } catch (error) {
         toast.error('Failed to import users');
         console.error(error);

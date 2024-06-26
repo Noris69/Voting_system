@@ -1,43 +1,91 @@
-const User = require('../models/User');
-const qrcode = require('qrcode');
-const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 const speakeasy = require('speakeasy');
+const qrcode = require('qrcode');
+const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const Sms77Client = require('sms77-client');
-
-
-// Charger les variables d'environnement
-require('dotenv').config();
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+require('dotenv').config(); // Load environment variables
 
 // Twilio configuration
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 const sms77 = new Sms77Client(process.env.SMS77_API_KEY);
 
+// Function to generate a certificate for a user
+const generateCertificate = (username) => {
+    return new Promise((resolve, reject) => {
+        const certsDir = path.join(__dirname, '../certs'); // Ensure the directory path is correct
+        const userKey = path.join(certsDir, `${username}.key`);
+        const userCsr = path.join(certsDir, `${username}.csr`);
+        const userCert = path.join(certsDir, `${username}.crt`);
+        const caCert = path.join(certsDir, 'myCA.pem');
+        const caKey = path.join(certsDir, 'myCA.key');
+        const caKeyPassword = process.env.CA_KEY_PASSWORD;
+
+        console.log(`Starting private key generation for ${username}`);
+        const genKey = spawn('openssl', ['genrsa', '-out', userKey, '2048']);
+        genKey.on('close', (code) => {
+            if (code !== 0) {
+                return reject(new Error(`genrsa process exited with code ${code}`));
+            }
+            console.log(`Private key generated for ${username}`);
+
+            console.log(`Starting CSR generation for ${username}`);
+            const genCsr = spawn('openssl', ['req', '-new', '-key', userKey, '-out', userCsr, '-subj', `/CN=${username}`]);
+            genCsr.on('close', (code) => {
+                if (code !== 0) {
+                    return reject(new Error(`req process exited with code ${code}`));
+                }
+                console.log(`CSR generated for ${username}`);
+
+                console.log(`Starting certificate signing for ${username}`);
+                const signCert = spawn('openssl', ['x509', '-req', '-in', userCsr, '-CA', caCert, '-CAkey', caKey, '-CAcreateserial', '-out', userCert, '-days', '365', '-sha256', '-passin', `pass:${caKeyPassword}`]);
+                signCert.on('close', (code) => {
+                    if (code !== 0) {
+                        return reject(new Error(`x509 process exited with code ${code}`));
+                    }
+                    console.log(`Certificate generated for ${username}`);
+                    resolve(userCert);
+                });
+                signCert.stderr.on('data', (data) => {
+                    console.error(`Error during certificate signing: ${data}`);
+                });
+            });
+            genCsr.stderr.on('data', (data) => {
+                console.error(`Error during CSR generation: ${data}`);
+            });
+        });
+        genKey.stderr.on('data', (data) => {
+            console.error(`Error during private key generation: ${data}`);
+        });
+    });
+};
 
 // Get all users
 async function getAllUsers(req, res) {
     try {
         const users = await User.find();
-        
         res.status(200).send(users);
     } catch (err) {
         res.status(500).send(err.message);
     }
 }
 
-// Fonction pour générer un username
+// Function to generate a username
 const generateUsername = (fullName) => {
     return fullName.toLowerCase().replace(/\s/g, '_') + Math.floor(Math.random() * 1000);
 };
 
-// Fonction pour générer un mot de passe aléatoire
+// Function to generate a random password
 const generatePassword = () => {
     return Math.random().toString(36).slice(-8);
 };
 
-// Fonction pour envoyer un email
+// Function to send an email
 const sendEmail = async (email, subject, html, attachments) => {
     let transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -55,12 +103,17 @@ const sendEmail = async (email, subject, html, attachments) => {
         attachments: attachments
     };
 
-    await transporter.sendMail(mailOptions);
+    try {
+        let info = await transporter.sendMail(mailOptions);
+        console.log('Email sent: ' + info.response);
+    } catch (error) {
+        console.error('Error sending email: ', error);
+    }
 };
 
-// Fonction pour envoyer un SMS via sms77.io
+// Function to send an SMS via sms77.io
 const sendSMS = async (phoneNumber, message) => {
-    const isValidPhoneNumber = /^\+\d{10,14}$/.test(phoneNumber); // Regex simple pour valider les numéros internationaux
+    const isValidPhoneNumber = /^\+\d{10,14}$/.test(phoneNumber); // Simple regex to validate international numbers
     if (!isValidPhoneNumber) {
         throw new Error(`Invalid phone number format: ${phoneNumber}`);
     }
@@ -83,7 +136,7 @@ const sendSMS = async (phoneNumber, message) => {
     }
 };
 
-// Importer des utilisateurs depuis un fichier JSON
+// Import users from a JSON file
 async function importUsers(req, res) {
     console.log('Received data:', req.body);
     const users = req.body;
@@ -113,37 +166,57 @@ async function importUsers(req, res) {
         const otpauth_url = secret.otpauth_url;
         const qrCodeDataUrl = await qrcode.toDataURL(otpauth_url);
 
-        // Envoyer l'e-mail avec la pièce jointe
-        const emailHtml = `
-            <p>Welcome to Ydays Voting System!</p>
-            <p>Here are your login details:</p>
-            <p>Username: ${username}</p>
-            <p>Please use the following QR code to set up your 2FA:</p>
-            <img src="cid:qrCode" alt="QR Code" />
-        `;
-
-        const emailAttachments = [
-            {
-                filename: 'qrcode.png',
-                content: qrCodeDataUrl.split("base64,")[1],
-                encoding: 'base64',
-                cid: 'qrCode'
-            }
-        ];
-
-        await sendEmail(email, 'Your Account Details', emailHtml, emailAttachments);
-
-        // Envoyer le mot de passe par SMS
-        const smsMessage = `Your Ydays Voting System password is: ${password}`;
+        console.log(`Generating certificate for ${username}`);
         try {
+            const userCertPath = await generateCertificate(username);
+            const userCert = fs.readFileSync(userCertPath, 'utf8');
+
+            // Store the certificate content in the user document
+            newUser.certificate = userCert;
+            await newUser.save();
+
+            // Attach the certificate to the email
+            const emailHtml = `
+                <p>Welcome to Ydays Voting System!</p>
+                <p>Here are your login details:</p>
+                <p>Username: ${username},${password}</p>
+                <p>Please use the following QR code to set up your 2FA:</p>
+                <img src="cid:qrCode" alt="QR Code" />
+                <p>Your certificate is attached to this email.</p>
+            `;
+
+            const emailAttachments = [
+                {
+                    filename: 'qrcode.png',
+                    content: qrCodeDataUrl.split("base64,")[1],
+                    encoding: 'base64',
+                    cid: 'qrCode'
+                },
+                {
+                    filename: `${username}.crt`,
+                    content: userCert
+                }
+            ];
+
+            console.log(`Sending email to ${email}`);
+            await sendEmail(email, 'Your Account Details', emailHtml, emailAttachments);
+
+            // Send the password via SMS
+            const smsMessage = `Your Ydays Voting System password is: ${password}`;
+            console.log(`Sending SMS to ${phone_number}`);
             await sendSMS(phone_number, smsMessage);
+
         } catch (err) {
-            console.error(`Failed to send SMS to ${phone_number}:`, err.message);
-            return res.status(400).send(`Failed to send SMS to ${phone_number}: ${err.message}`);
+            console.error(`Failed to generate certificate or send email/SMS for ${username}:`, err.message);
+            if (!res.headersSent) {
+                return res.status(400).send(`Failed to generate certificate or send email/SMS for ${username}: ${err.message}`);
+            }
         }
     }
 
-    res.status(200).send('Users imported successfully');
+    if (!res.headersSent) {
+        res.status(200).send('Users imported successfully');
+    }
 }
 
 async function getUserData(userId) {

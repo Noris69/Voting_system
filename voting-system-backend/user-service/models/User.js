@@ -27,6 +27,9 @@ const UserSchema = new mongoose.Schema({
     two_factor_secret: {
         type: String
     },
+    certificate: {
+        type: String
+    },
     created_at: {
         type: Date,
         default: Date.now

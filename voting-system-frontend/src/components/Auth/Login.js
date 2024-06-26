@@ -9,17 +9,33 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState('');
+  const [certificate, setCertificate] = useState(null);
   const [userId, setUserId] = useState(null);
   const [jwtToken, setJwtToken] = useState('');
   const { setAuthData } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  const handleCertificateChange = (e) => {
+    setCertificate(e.target.files[0]);
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
+    if (certificate) {
+      formData.append('certificate', certificate);
+    }
+
     if (!userId) {
       // First step: Authenticate with username and password
       try {
-        const response = await api.post('/auth/login', { username, password });
+        const response = await api.post('/auth/login', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
         const { user, token } = response.data;
         setUserId(user._id);
         setJwtToken(token);
@@ -86,6 +102,17 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="certificate">
+                Certificate
+              </label>
+              <input
+                type="file"
+                id="certificate"
+                onChange={handleCertificateChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               />
             </div>
           </>

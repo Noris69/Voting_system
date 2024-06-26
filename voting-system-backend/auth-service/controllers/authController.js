@@ -3,6 +3,27 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure the uploads directory exists
+const uploadDir = 'uploads';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname)); // Append extension
+    }
+});
+
+const upload = multer({ storage: storage });
 
 // Register a new user
 async function registerUser(req, res) {
@@ -44,22 +65,51 @@ async function registerUser(req, res) {
     }
 }
 
+// Helper function to verify the certificate
+const verifyCertificate = (uploadedCertContent, storedCertContent) => {
+    return uploadedCertContent === storedCertContent;
+};
+
 // Login an existing user
 async function loginUser(req, res) {
     console.log("loginUser called");
-    try {
-        const { username, password } = req.body;
+
+    upload.single('certificate')(req, res, async function (err) {
+        if (err) {
+            console.error('Multer error:', err);
+            return res.status(500).send('Multer error');
+        }
+
+        const username = req.body.username;
+        const password = req.body.password;
+        const certificatePath = req.file ? req.file.path : null;
+
+        console.log(`Username: ${username}, Password: ${password}, Certificate Path: ${certificatePath}`);
+
         const user = await User.findOne({ username });
-        if (user && await bcrypt.compare(password, user.password_hash)) {
+
+        if (!user) {
+            console.log('User not found');
+            return res.status(401).send('Invalid credentials');
+        }
+
+        const passwordMatches = await bcrypt.compare(password, user.password_hash);
+        let certificateValid = false;
+
+        if (certificatePath) {
+            const uploadedCertContent = fs.readFileSync(certificatePath, 'utf8');
+            certificateValid = verifyCertificate(uploadedCertContent, user.certificate);
+        }
+
+        console.log(`Password matches: ${passwordMatches}, Certificate valid: ${certificateValid}`);
+
+        if (passwordMatches && certificateValid) {
             const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
             res.status(200).send({ token, user: { _id: user._id, username: user.username, role: user.role } });
         } else {
-            res.status(401).send('Invalid credentials');
+            res.status(401).send('Invalid credentials or certificate');
         }
-    } catch (err) {
-        console.error('Login error:', err.message);
-        res.status(500).send('Internal Server Error');
-    }
+    });
 }
 
 // Verify 2FA token and issue a new token
@@ -80,7 +130,6 @@ async function verify2FA(req, res) {
         });
 
         if (verified) {
-            // Issue a new token upon successful 2FA verification
             const newToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
             res.status(200).send({ token: newToken, user: { _id: user._id, username: user.username, role: user.role } });
         } else {
